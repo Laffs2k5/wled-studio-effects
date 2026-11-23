@@ -49,7 +49,7 @@ The tests run each effect frame by frame in wled-studio-builder's preview (WebAs
 ```bash
 source ~/emsdk/emsdk_env.sh                       # Emscripten 7.0.1
 ../wled-studio-builder/preview/build.sh /tmp/fx .
-PREVIEW_DIR=/tmp/fx node --test test/
+PREVIEW_DIR=/tmp/fx node --test test/*.test.mjs
 ```
 
 CI does the same, with the builder at a pinned commit (`.github/workflows/ci.yml`).

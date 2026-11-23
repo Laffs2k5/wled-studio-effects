@@ -51,4 +51,4 @@ jobs:
         run: |
           source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
           builder/preview/build.sh "$RUNNER_TEMP/preview" .
-          PREVIEW_DIR="$RUNNER_TEMP/preview" node --test test/
+          PREVIEW_DIR="$RUNNER_TEMP/preview" node --test test/*.test.mjs
