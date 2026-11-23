@@ -7,7 +7,10 @@ Own WLED effects, as one usermod library, for wled-studio. Public, EUPL-1.2.
 - **Public repo: nothing about anyone's home.** No hosts, room sizes, wall names or LED counts of a
   real installation, in code, tests or docs.
 - **No WLED code copied.** Write against WLED's effect API (`SEGMENT`, `SEGENV`, `strip`, colour
-  helpers); the preview shim in wled-studio-builder is the reference for what is available.
+  helpers); the preview shim in wled-studio-builder is the reference for what is available, but
+  **the gate's real build is the check**: the shim can be looser than WLED. Learned 2026-11-23:
+  WLED's `mode_ptr` is `WS2812FX::mode_ptr` (so take a plain `void (*)(void)`), and a `Usermod` must
+  override both `setup()` and `loop()` (pure virtual). The shim now rejects both too.
 - **Fixed ids, in `studio_effects.cpp` only, ascending.** Each effect has a `constexpr uint8_t
   k...Id`, a `const char k...Data[] PROGMEM` with its metadata, and an `add_fixed(k...Id, &fn,
   k...Data)` call, in that shape: wled-studio-builder's manifest reads it. Ids never move once
