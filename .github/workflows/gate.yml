@@ -1,0 +1,66 @@
+name: gate
+
+# Builds these effects into real firmware through wled-studio-builder's gate: the vendor's stock
+# image is rebuilt and checked first, then rebuilt with this usermod; only its objects may be new,
+# and the image must fit the app slot. Then the image's effect list (the builder's effects.json)
+# must hold the effects at their fixed ids. Nothing is flashed, and no firmware is published: the
+# reports and the effect list are kept, the binary isn't.
+on:
+  push:
+    branches: [main]
+    paths: ["*.cpp", "*.h", "library.json", ".github/workflows/gate.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false   # a firmware build is slow; let it finish
+
+permissions:
+  contents: read
+
+env:
+  # wled-studio-builder's image at a pinned commit (tags are sha-<commit>)
+  BUILDER_IMAGE: ghcr.io/laffs2k5/wled-studio-builder:sha-eeb79f5
+  PINS: quinled-16.0.1.json
+  TARGET: dig-next-2
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Gate (stock checked, custom with these effects, objects, size)
+        run: |
+          mkdir -p work gate && sudo chown 10001:10001 work gate
+          docker run --rm --cap-drop ALL --security-opt no-new-privileges \
+            -v "$PWD:/effects/wled-studio-effects:ro" -v "$PWD/work:/work" -v "$PWD/gate:/out" \
+            --entrypoint /home/builder/venv/bin/python "$BUILDER_IMAGE" \
+            /home/builder/studio-src/studio/gate.py "/home/builder/studio-src/pins/$PINS" \
+            --target "$TARGET" --usermod /effects/wled-studio-effects --work /work --out /out
+      - name: The gate passed, and the image's effect list holds the effects at their ids
+        run: |
+          jq '{passed, checks, objects: {added: .objects.added, unexpected: .objects.unexpected}, error}' gate/gate-report.json
+          jq -r '.effects_manifest' gate/custom/build-report.json
+          python3 - <<'PY'
+          import json
+          gate = json.load(open("gate/gate-report.json"))
+          assert gate["passed"], gate
+          fx = {e["id"]: e for e in json.load(open("gate/custom/effects.json"))["effects"]}
+          assert fx[240]["name"] == "Studio VU" and fx[241]["name"] == "Sky Lightning", (fx.get(240), fx.get(241))
+          assert fx[240]["meta"].startswith("Sensitivity,Fall,Peak hold"), fx[240]
+          assert all(fx[i]["name"] == "RSVD" for i in range(220, 240)), "padding below 240"
+          assert [i for i in range(220) if fx[i]["name"] == "RSVD"] == [142, 169, 170, 171], "the stock list"
+          size = json.load(open("gate/custom/build-report.json"))["firmware_size"]
+          print(f"gate passed; {len(fx)} effects; Studio VU 240, Sky Lightning 241; image {size} bytes")
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: gate-result
+          path: |
+            gate/gate-report.json
+            gate/custom/build-report.json
+            gate/custom/effects.json
+            gate/custom/objects.json
+          if-no-files-found: ignore

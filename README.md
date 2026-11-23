@@ -54,6 +54,11 @@ PREVIEW_DIR=/tmp/fx node --test test/*.test.mjs
 
 CI does the same, with the builder at a pinned commit (`.github/workflows/ci.yml`).
 
+**In real firmware:** `.github/workflows/gate.yml` builds the effects into QuinLED's Dig-Next-2
+16.0.1 image through wled-studio-builder's gate (the stock image checked first, only this usermod's
+objects added, the image within the app slot) and checks that the image's effect list holds them at
+240 and 241. It keeps the reports and the effect list; it publishes no firmware.
+
 ## Licence
 
 EUPL-1.2 ([LICENSE](LICENSE)), the same as WLED. The effects are written against WLED's effect
