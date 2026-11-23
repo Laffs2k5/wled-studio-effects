@@ -58,6 +58,10 @@ CI does the same, with the builder at a pinned commit (`.github/workflows/ci.yml
 16.0.1 image through wled-studio-builder's gate (the stock image checked first, only this usermod's
 objects added, the image within the app slot) and checks that the image's effect list holds them at
 240 and 241. It keeps the reports and the effect list; it publishes no firmware.
+It passed on 2026-11-23: only this library's three objects are new, and the image is
+1,338,496 bytes. Keep the gate's work folder outside this repo's folder (the workflow uses
+`RUNNER_TEMP`): PlatformIO compiles every source file under a library's folder, a toolchain
+included. A pass in the preview doesn't prove the real build; the gate does.
 
 ## Licence
 
