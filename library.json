@@ -1,0 +1,7 @@
+{
+  "name": "wled-studio-effects",
+  "version": "0.1.0",
+  "description": "Own WLED effects made with wled-studio, each registered at a fixed effect id",
+  "license": "EUPL-1.2",
+  "build": { "libArchive": false }
+}

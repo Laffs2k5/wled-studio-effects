@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # the preview shim and the manifest reader, at a pinned commit of wled-studio-builder
+  BUILDER_COMMIT: eeb79f5c161d53725d6186524593a33e59a4866d
+  EMSDK_VERSION: "7.0.1"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Laffs2k5/wled-studio-builder
+          ref: ${{ env.BUILDER_COMMIT }}
+          path: builder
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22.23.5"
+      - name: The registry reads as the builder's manifest expects
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, "builder/studio")
+          import manifest
+          found = [(i, d.split("@")[0]) for i, d in manifest.usermod_effects(open("studio_effects.cpp").read())]
+          print(found)
+          assert found == [(240, "Studio VU"), (241, "Sky Lightning")], found
+          assert [i for i, _ in found] == sorted(i for i, _ in found), "ids must ascend"
+          PY
+      - name: Install Emscripten
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install "$EMSDK_VERSION"
+          "$RUNNER_TEMP/emsdk/emsdk" activate "$EMSDK_VERSION"
+      - name: Compile the effects to WebAssembly and test their frames
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          builder/preview/build.sh "$RUNNER_TEMP/preview" .
+          PREVIEW_DIR="$RUNNER_TEMP/preview" node --test test/
