@@ -20,7 +20,7 @@ permissions:
 
 env:
   # wled-studio-builder's image at a pinned commit (tags are sha-<commit>)
-  BUILDER_IMAGE: ghcr.io/laffs2k5/wled-studio-builder:sha-eeb79f5
+  BUILDER_IMAGE: ghcr.io/laffs2k5/wled-studio-builder:sha-8e6779e
   PINS: quinled-16.0.1.json
   TARGET: dig-next-2
 

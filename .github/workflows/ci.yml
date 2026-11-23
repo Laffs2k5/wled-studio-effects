@@ -15,7 +15,7 @@ permissions:
 
 env:
   # the preview shim and the manifest reader, at a pinned commit of wled-studio-builder
-  BUILDER_COMMIT: eeb79f5c161d53725d6186524593a33e59a4866d
+  BUILDER_COMMIT: 8e6779e484faca564b688e2a7282e9867cb70a0d
   EMSDK_VERSION: "7.0.1"
 
 jobs:
