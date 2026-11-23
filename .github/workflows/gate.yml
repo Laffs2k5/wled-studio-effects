@@ -31,14 +31,17 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Gate (stock checked, custom with these effects, objects, size)
+        # work and gate live outside the checkout: the checkout is the usermod, and PlatformIO
+        # compiles every source file under a library's folder, the gate's toolchain included
         run: |
-          mkdir -p work gate && sudo chown 10001:10001 work gate
+          mkdir -p "$RUNNER_TEMP/work" "$RUNNER_TEMP/gate" && sudo chown 10001:10001 "$RUNNER_TEMP/work" "$RUNNER_TEMP/gate"
           docker run --rm --cap-drop ALL --security-opt no-new-privileges \
-            -v "$PWD:/effects/wled-studio-effects:ro" -v "$PWD/work:/work" -v "$PWD/gate:/out" \
+            -v "$PWD:/effects/wled-studio-effects:ro" -v "$RUNNER_TEMP/work:/work" -v "$RUNNER_TEMP/gate:/out" \
             --entrypoint /home/builder/venv/bin/python "$BUILDER_IMAGE" \
             /home/builder/studio-src/studio/gate.py "/home/builder/studio-src/pins/$PINS" \
             --target "$TARGET" --usermod /effects/wled-studio-effects --work /work --out /out
       - name: The gate passed, and the image's effect list holds the effects at their ids
+        working-directory: ${{ runner.temp }}
         run: |
           jq '{passed, checks, objects: {added: .objects.added, unexpected: .objects.unexpected}, error}' gate/gate-report.json
           jq -r '.effects_manifest' gate/custom/build-report.json
@@ -59,8 +62,8 @@ jobs:
         with:
           name: gate-result
           path: |
-            gate/gate-report.json
-            gate/custom/build-report.json
-            gate/custom/effects.json
-            gate/custom/objects.json
+            ${{ runner.temp }}/gate/gate-report.json
+            ${{ runner.temp }}/gate/custom/build-report.json
+            ${{ runner.temp }}/gate/custom/effects.json
+            ${{ runner.temp }}/gate/custom/objects.json
           if-no-files-found: ignore
