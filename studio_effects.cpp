@@ -24,7 +24,8 @@ const char kPadName[] PROGMEM = "RSVD";
 void mode_pad(void) { SEGMENT.fill(SEGCOLOR(0)); }
 
 // Pad up to the id, then add the effect; false if WLED already has that many effects.
-bool add_fixed(uint8_t id, mode_ptr fn, const char* data) {
+// fn as a plain function pointer: WLED's own type for it is nested (WS2812FX::mode_ptr)
+bool add_fixed(uint8_t id, void (*fn)(void), const char* data) {
   if (strip.getModeCount() > id) return false;
   while (strip.getModeCount() < id)
     if (strip.addEffect(strip.getModeCount(), &mode_pad, kPadName) == 255) return false;
@@ -41,6 +42,8 @@ class StudioEffects : public Usermod {
     if (add_fixed(kStudioVuId, &mode_studio_vu, kStudioVuData)) registered_++;
     if (add_fixed(kSkyLightningId, &mode_sky_lightning, kSkyLightningData)) registered_++;
   }
+
+  void loop() override {}  // WLED's Usermod requires it
 
   void addToJsonInfo(JsonObject& root) override {
     JsonObject user = root["u"];
