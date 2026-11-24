@@ -4,7 +4,9 @@ name: gate
 # image is rebuilt and checked first, then rebuilt with this usermod; only its objects may be new,
 # and the image must fit the app slot. Then the image's effect list (the builder's effects.json)
 # must hold the effects at their fixed ids. Nothing is flashed, and no firmware is published: the
-# reports and the effect list are kept, the binary isn't.
+# reports and the effect list are kept, the binary isn't. Then the image's virtual twin (WLED's own
+# engine in WebAssembly, built with the image's flags) must run every effect without a crash that
+# the stock twin doesn't have, its effect list the image's.
 on:
   push:
     branches: [main]
@@ -20,7 +22,9 @@ permissions:
 
 env:
   # wled-studio-builder's image at a pinned commit (tags are sha-<commit>)
-  BUILDER_IMAGE: ghcr.io/laffs2k5/wled-studio-builder:sha-8e6779e
+  BUILDER_IMAGE: ghcr.io/laffs2k5/wled-studio-builder:sha-efb14e9
+  # the same builder's sources, for the virtual check (studio/virtual_check.py, virtual/)
+  BUILDER_COMMIT: efb14e9b7e6bdbac52d7a3b45d8a110bfaa35642
   PINS: quinled-16.0.1.json
   TARGET: dig-next-2
 
@@ -57,6 +61,19 @@ jobs:
           size = json.load(open("gate/custom/build-report.json"))["firmware_size"]
           print(f"gate passed; {len(fx)} effects; Studio VU 240, Sky Lightning 241; image {size} bytes")
           PY
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Laffs2k5/wled-studio-builder
+          ref: ${{ env.BUILDER_COMMIT }}
+          path: builder
+      - name: The image's virtual twin runs every effect (WLED's own engine in WebAssembly)
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install 7.0.1 >/dev/null && "$RUNNER_TEMP/emsdk/emsdk" activate 7.0.1 >/dev/null
+          sudo chmod -R a+rX "$RUNNER_TEMP/work/wled" "$RUNNER_TEMP/gate"   # the container's user wrote them
+          python3 builder/studio/virtual_check.py --wled "$RUNNER_TEMP/work/wled" \
+            --flags "$RUNNER_TEMP/gate/custom/fx_flags.json" --effects "$RUNNER_TEMP/gate/custom/effects.json" \
+            --usermod . --out "$RUNNER_TEMP/virtual" --emsdk "$RUNNER_TEMP/emsdk"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -66,4 +83,6 @@ jobs:
             ${{ runner.temp }}/gate/custom/build-report.json
             ${{ runner.temp }}/gate/custom/effects.json
             ${{ runner.temp }}/gate/custom/objects.json
+            ${{ runner.temp }}/gate/custom/fx_flags.json
+            ${{ runner.temp }}/virtual/virtual-report.json
           if-no-files-found: ignore
