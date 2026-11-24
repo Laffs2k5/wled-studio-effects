@@ -21,6 +21,11 @@ Own WLED effects, as one usermod library, for wled-studio. Public, EUPL-1.2.
 - **State** goes in `SEGENV.data` (`allocateData`), initialised when `SEGENV.call == 0`; time from
   `strip.now`, so the effect runs at any frame rate.
 
+- **No users yet** (owner, 2026-11-24): nobody runs these effects, so change controls, defaults and
+  behaviour freely; don't design around presets that might exist. Once we use the effects
+  ourselves (flashed, in looks), compatibility with saved presets starts to matter: write that
+  down here when it happens.
+
 ## Git
 
 - Push directly to `main`; atomic conventional commits, the body explains *why*. AI config
