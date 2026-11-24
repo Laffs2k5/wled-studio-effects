@@ -60,7 +60,8 @@ source ~/emsdk/emsdk_env.sh                       # Emscripten 7.0.1
 PREVIEW_DIR=/tmp/fx node --test test/*.test.mjs
 ```
 
-CI does the same, with the builder at a pinned commit (`.github/workflows/ci.yml`).
+CI does the same, with the builder at a pinned commit (`.github/workflows/ci.yml`), and again
+with WLED's own colour code (`WLED_SRC=<WLED checkout>`: the builder's exact colours).
 
 **In real firmware:** `.github/workflows/gate.yml` builds the effects into QuinLED's Dig-Next-2
 16.0.1 image through wled-studio-builder's gate (the stock image checked first, only this usermod's

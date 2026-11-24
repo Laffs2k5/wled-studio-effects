@@ -15,7 +15,7 @@ permissions:
 
 env:
   # the preview shim and the manifest reader, at a pinned commit of wled-studio-builder
-  BUILDER_COMMIT: 8e6779e484faca564b688e2a7282e9867cb70a0d
+  BUILDER_COMMIT: 346df96c0dc38fdb3376a86deb180d3e9bf97523
   EMSDK_VERSION: "7.0.1"
 
 jobs:
@@ -52,3 +52,10 @@ jobs:
           source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
           builder/preview/build.sh "$RUNNER_TEMP/preview" .
           PREVIEW_DIR="$RUNNER_TEMP/preview" node --test test/*.test.mjs
+      - name: The same frames with WLED's own colour code (exact colours, the pinned 16.0.1 commit)
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          read -r repo commit < <(python3 -c 'import json; w = json.load(open("builder/pins/quinled-16.0.1.json"))["wled"]; print(w["repo"], w["commit"])')
+          git init -q "$RUNNER_TEMP/wled" && git -C "$RUNNER_TEMP/wled" fetch -q --depth 1 "$repo" "$commit" && git -C "$RUNNER_TEMP/wled" checkout -q FETCH_HEAD
+          WLED_SRC="$RUNNER_TEMP/wled" builder/preview/build.sh "$RUNNER_TEMP/exact" .
+          PREVIEW_DIR="$RUNNER_TEMP/exact" node --test test/*.test.mjs
