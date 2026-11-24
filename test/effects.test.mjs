@@ -31,7 +31,9 @@ test("both effects sit at their fixed ids, behind hidden placeholders", async ()
   const { m, names } = await effect(240, 10);
   assert.equal(names[240], "Studio VU");
   assert.equal(names[241], "Sky Lightning");
-  assert.ok(names.slice(1, 240).every((n) => n === "RSVD"));
+  // landed at its fixed id, padded below with placeholders (not appended at the first free slot);
+  // a virtual WLED (the real engine) also has WLED's own gaps further down
+  assert.equal(names[239], "RSVD");
   assert.match(m.UTF8ToString(m._preview_effect_metadata(240)), /^Sensitivity,Fall,Peak hold,Yellow at,Red at,Smooth;Low,Mid,High;;1v;/);
 });
 
