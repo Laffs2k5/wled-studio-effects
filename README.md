@@ -6,6 +6,13 @@ Own effects for [WLED](https://github.com/wled/WLED), made with
 (`wled-studio-effects`) that registers each effect at a **fixed effect id**, so presets that store
 the id keep working across firmware builds.
 
+> **No warranty, no liability, no support.** These effects are provided "as is" under the EUPL-1.2
+> (Articles 7 and 8: no warranty, limited liability). Firmware built with them can fail to flash or
+> to start, and an effect can misbehave on your hardware. You use them entirely at your own risk;
+> the authors accept no liability for failed flashes, bricked devices or any other damage or loss,
+> and offer no support of any kind. See also
+> [wled-studio-builder's DISCLAIMER.md](https://github.com/Laffs2k5/wled-studio-builder/blob/main/DISCLAIMER.md).
+
 | Id | Effect | What it does |
 |---|---|---|
 | 240 | **Studio VU** | A classic VU meter on the mic: a bar grows from the segment's start with the volume, coloured by position from Low through Mid to High (green, yellow, red by default). It rises at once, falls at an adjustable rate, and a peak dot holds before it drops. Two segments running it on the same sound stay in step. |
