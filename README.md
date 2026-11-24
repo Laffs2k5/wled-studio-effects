@@ -88,3 +88,5 @@ strikes lean only towards it. Not built: wait until Lean has been seen on a wall
 
 EUPL-1.2 ([LICENSE](LICENSE)), the same as WLED. The effects are written against WLED's effect
 API; no WLED code is copied.
+
+<!-- First push from wled-studio on docker1, 2026-11-24 (a test commit; safe to remove). -->
