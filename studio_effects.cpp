@@ -17,7 +17,7 @@ const char kStudioVuData[] PROGMEM =
 
 constexpr uint8_t kSkyLightningId = 241;
 const char kSkyLightningData[] PROGMEM =
-    "Sky Lightning@Strikes,Size,Afterglow,Flicker,,Overlay;Flash,Base,Afterglow;;1;sx=96,ix=160,c1=128,c2=128";
+    "Sky Lightning@Strikes,Size,Afterglow,Flicker,Lean,Overlay;Flash,Base,Afterglow;;1;sx=96,ix=160,c1=128,c2=128,c3=16";
 
 // The placeholder name must contain "RSVD" (hidden by WLED's UI) and must not be empty.
 const char kPadName[] PROGMEM = "RSVD";

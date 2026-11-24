@@ -29,6 +29,11 @@ the id keep working across firmware builds.
 - Size: how far a flash spreads.
 - Afterglow: how long it stays, 0.2 to 3 s.
 - Flicker: 1 to 4 return strokes.
+- Lean (0-31): how lopsided strikes may be. 0 keeps every flash centred on where it struck; higher
+  values let each strike lean at random, up to the full range at 31, from a bolt running only left
+  through centred to one running only right. A flash keeps its length (Size), so a one-sided bolt
+  runs twice as far its one way. The draw is weighted towards the ends, so lopsided strikes look
+  lopsided.
 - Overlay: draw no base colour.
 - Colours Flash (white if black), Base (the sky between strikes), Afterglow (a cool white if black).
 
@@ -68,19 +73,8 @@ included. A pass in the preview doesn't prove the real build; the gate does.
 
 ## Ideas, not built yet
 
-**Sky Lightning: lopsided strikes** (asked for 2026-11-24). Today a flash grows symmetrically from
-its start LED and is lopsided only where the strip's end cuts it off. Wanted: each strike gets a
-random lean, anywhere from "grows only to the left" through centred to "grows only to the right".
-A one-sided flash reads as a bolt running across the sky from where it struck. Sketch:
-- per strike, draw a lean `a` in [-1, 1] and split the flash's length between the sides:
-  `left = reach * (1 - a)`, `right = reach * (1 + a)`. The total stays as Size sets it, so a
-  one-sided bolt is twice as long on its one side. The afterglow follows the same shape;
-- a new slider **Lean** in the free slot (custom 3, 0-31): 0 = always centred, as today; higher
-  values widen the random range, up to the full left-to-right range at 31. Maybe weight the draw
-  towards the extremes, so one-sided bolts don't drown among almost-centred ones;
-- open: a checkbox for leaning one way only, if a strip's one end is "up";
-- the id (241) doesn't change; the metadata gains the slider's name, and the frame tests gain a
-  case for each extreme.
+**Sky Lightning: lean one way only?** For a strip whose one end is "up", a checkbox that lets
+strikes lean only towards it. Not built: wait until Lean has been seen on a wall.
 
 ## Licence
 

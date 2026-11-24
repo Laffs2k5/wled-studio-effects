@@ -4,8 +4,9 @@
 // an afterglow that fades slowly, brightest where the flash was, the way it sticks on the retina.
 //
 // Controls: Strikes (how often), Size (how far a flash spreads), Afterglow (how long it stays),
-// Flicker (1-4 return strokes), Overlay (draw no base: for a layer over another segment, with
-// the blend mode Screen or Lighten).
+// Flicker (1-4 return strokes), Lean (how lopsided strikes may be: 0 always centred, 31 anything
+// from one-sided left to one-sided right), Overlay (draw no base: for a layer over another
+// segment, with the blend mode Screen or Lighten).
 // Colours: Flash (white if black), Base (the sky between strikes), Afterglow (a cool white if
 // black).
 #include <math.h>
@@ -17,8 +18,8 @@ namespace {
 struct Strike {
   uint32_t start;      // the first stroke
   uint32_t next;       // when the next strike starts
-  float centre;        // LED index
-  float reach;         // the flash's radius, LEDs
+  float centre;        // LED index: where it struck
+  float left, right;   // how far the flash spreads each way, LEDs
   uint8_t strokes;     // 1..4
 };
 
@@ -34,10 +35,23 @@ uint32_t next_interval() {
   return uint32_t(mean * (0.3f + 1.4f * hw_random16() / 65535.0f));
 }
 
+// A random lean in -1..1 within Lean's range, weighted towards the ends: a lopsided bolt should
+// look lopsided, not almost centred.
+float lean() {
+  const float u = 2.0f * hw_random16() / 65535.0f - 1.0f;
+  const float a = sqrtf(fabsf(u));
+  return (SEGMENT.custom3 / 31.0f) * (u < 0 ? -a : a);
+}
+
 void new_strike(Strike* s, unsigned len) {
   s->start = strip.now;
   s->centre = float(hw_random16(len));
-  s->reach = 2.0f + 0.5f * len * SEGMENT.intensity / 255.0f;
+  // Size sets the flash's length, 2 * reach; Lean splits it between the two sides, so a
+  // one-sided bolt runs twice as far its one way
+  const float reach = 2.0f + 0.5f * len * SEGMENT.intensity / 255.0f;
+  const float a = lean();
+  s->left = reach * (1.0f - a);
+  s->right = reach * (1.0f + a);
   s->strokes = 1 + (SEGMENT.custom2 * 3 + 127) / 255;
   s->next = strip.now + s->strokes * kStrokeGapMs + next_interval();
 }
@@ -66,12 +80,13 @@ void mode_sky_lightning(void) {
   const float keep = expf(-dt / tau);
 
   const uint32_t age = strip.now - s->start;
-  const float radius = s->reach * fminf(1.0f, (age + 20.0f) / kSpreadMs);
+  const float grown = fminf(1.0f, (age + 20.0f) / kSpreadMs);
   for (unsigned i = 0; i < len; i++) {
     float f = 0;
     if (s->strokes) {
       const float d = fabsf(float(i) - s->centre);
-      const float fall = d < radius ? powf(1.0f - d / radius, 1.5f) : 0.0f;
+      const float radius = (float(i) < s->centre ? s->left : s->right) * grown;
+      const float fall = d == 0 ? 1.0f : d < radius ? powf(1.0f - d / radius, 1.5f) : 0.0f;
       for (uint8_t k = 0; k < s->strokes; k++) {
         const int32_t since = int32_t(age) - int32_t(k * kStrokeGapMs);
         if (since >= 0) f = fmaxf(f, fall * (1.0f - 0.15f * k) * expf(-since / kStrokeDecayMs));

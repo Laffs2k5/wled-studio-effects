@@ -88,7 +88,8 @@ test("VU: own colours, and smooth blending between zones", async () => {
 // --- Sky Lightning ----------------------------------------------------------------------
 
 const BASE = 0x00402060;  // a dark lilac
-const sky = (settings = {}) => effect(241, 120, { sx: 255, ix: 200, c1: 128, c2: 0, col0: 0, col1: BASE, col2: 0, ...settings });
+const sky = (settings = {}, len = 120) =>
+  effect(241, len, { sx: 255, ix: 200, c1: 128, c2: 0, c3: 0, col0: 0, col1: BASE, col2: 0, ...settings });
 const brightness = (c) => rgb(c).reduce((a, b) => a + b, 0);
 
 /** Run frames every 20 ms from 0 to `until`, returning them by time. */
@@ -127,6 +128,62 @@ test("sky: an afterglow stays where the flash was, and fades", async () => {
   const later = glowAt(start + 2400);
   assert.ok(after > brightness(BASE) + 20 && after < flash, `afterglow ${after} below the flash ${flash}`);
   assert.ok(later < after, "and it fades");
+});
+
+/**
+ * Each strike's flash on a 300-LED strip: where it struck (the brightest LED in its first frame)
+ * and how far it reached each way: the LEDs it lifts above the frame before it at any time in
+ * its first 200 ms. Strikes too close to an end to show their full reach are left out.
+ */
+async function strikes(settings) {
+  const len = 300;
+  const { frame } = await sky({ ix: 60, c1: 0, ...settings }, len);  // reach ~37 LEDs, a short afterglow
+  const frames = run(frame, 120000);
+  const times = [...frames.keys()];
+  const out = [];
+  for (let n = 1; n < times.length; n++) {
+    const t = times[n], now = frames.get(t), before = frames.get(times[n - 1]);
+    const lit = (i, f, g) => brightness(f[i]) > brightness(g[i]) + 150;
+    if (!now.some((_, i) => lit(i, now, before))) continue;
+    if (before.some((c) => brightness(c) > 600)) continue;        // not the strike's first frame
+    const first = now.map(brightness);
+    const centre = first.indexOf(Math.max(...first));
+    if (!frames.get(t + 200)) break;
+    const prior = before.map(brightness);
+    const peak = new Array(len).fill(0);
+    for (let u = t; u <= t + 200; u += 20) frames.get(u).forEach((c, i) => { peak[i] = Math.max(peak[i], brightness(c)); });
+    let left = 0, right = 0;
+    for (let i = 0; i < len; i++) {
+      if (peak[i] < prior[i] + 30) continue;
+      if (i < centre) left++; else if (i > centre) right++;
+    }
+    if (centre > 80 && centre < len - 80) out.push({ centre, left, right });
+    n += 10;                                                        // past this strike
+  }
+  return out;
+}
+const lopsided = (s) => (s.right - s.left) / Math.max(1, s.left + s.right);
+
+test("sky: Lean 0 keeps every strike centred", async () => {
+  const all = await strikes({ c3: 0 });
+  assert.ok(all.length >= 10, `enough strikes away from the ends: ${all.length}`);
+  for (const s of all) {
+    assert.ok(s.left + s.right > 20, `it spreads: ${JSON.stringify(s)}`);
+    assert.ok(Math.abs(lopsided(s)) < 0.2, `centred: ${JSON.stringify(s)}`);
+  }
+});
+
+test("sky: Lean 31 gives strikes from one-sided left to one-sided right", async () => {
+  const all = await strikes({ c3: 31 });
+  assert.ok(all.length >= 10, `enough strikes away from the ends: ${all.length}`);
+  const ratios = all.map(lopsided);
+  assert.ok(ratios.some((r) => r < -0.8), `one running left: ${ratios.map((r) => r.toFixed(2))}`);
+  assert.ok(ratios.some((r) => r > 0.8), `one running right: ${ratios.map((r) => r.toFixed(2))}`);
+  // a one-sided bolt keeps the flash's length: it runs about twice as far as a centred one's side
+  const centredSide = (await strikes({ c3: 0 })).map((s) => (s.left + s.right) / 2);
+  const oneSided = all.filter((s) => Math.abs(lopsided(s)) > 0.9).map((s) => Math.max(s.left, s.right));
+  const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+  assert.ok(mean(oneSided) > 1.5 * mean(centredSide), `${mean(oneSided)} vs ${mean(centredSide)}`);
 });
 
 test("sky: Overlay draws no base, for layering", async () => {
