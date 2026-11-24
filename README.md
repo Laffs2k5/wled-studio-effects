@@ -79,10 +79,8 @@ A one-sided flash reads as a bolt running across the sky from where it struck. S
   values widen the random range, up to the full left-to-right range at 31. Maybe weight the draw
   towards the extremes, so one-sided bolts don't drown among almost-centred ones;
 - open: a checkbox for leaning one way only, if a strip's one end is "up";
-- **build it before anyone saves a look with this effect.** WLED's default for custom 3 is 16, not
-  0, so an existing preset would suddenly lean. Until then, no look depends on it. The id (241)
-  doesn't change; the metadata gains the slider's name, and the frame tests a case for each
-  extreme.
+- the id (241) doesn't change; the metadata gains the slider's name, and the frame tests gain a
+  case for each extreme.
 
 ## Licence
 
