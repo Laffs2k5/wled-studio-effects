@@ -20,6 +20,9 @@ the id keep working across firmware builds.
 - Yellow at, Red at: where the Mid and High zones start.
 - Smooth: blend between the zone colours instead of hard steps.
 - Colours Low, Mid, High: a black slot means the classic green, yellow, red.
+- As a layer over another segment it needs no Overlay option: unlit LEDs are black, and with the
+  blend mode Lighten or Screen black leaves what's beneath unchanged. (Sky Lightning needs the
+  option only because its Base colour would otherwise paint over the layer below.)
 
 **Sky Lightning** (`1`: 1D)
 - Strikes: how often, from about every 20 s down to every 1.5 s (with random spread).
@@ -62,6 +65,24 @@ It passed on 2026-11-23: only this library's three objects are new, and the imag
 1,338,496 bytes. Keep the gate's work folder outside this repo's folder (the workflow uses
 `RUNNER_TEMP`): PlatformIO compiles every source file under a library's folder, a toolchain
 included. A pass in the preview doesn't prove the real build; the gate does.
+
+## Ideas, not built yet
+
+**Sky Lightning: lopsided strikes** (asked for 2026-11-24). Today a flash grows symmetrically from
+its start LED and is lopsided only where the strip's end cuts it off. Wanted: each strike gets a
+random lean, anywhere from "grows only to the left" through centred to "grows only to the right".
+A one-sided flash reads as a bolt running across the sky from where it struck. Sketch:
+- per strike, draw a lean `a` in [-1, 1] and split the flash's length between the sides:
+  `left = reach * (1 - a)`, `right = reach * (1 + a)`. The total stays as Size sets it, so a
+  one-sided bolt is twice as long on its one side. The afterglow follows the same shape;
+- a new slider **Lean** in the free slot (custom 3, 0-31): 0 = always centred, as today; higher
+  values widen the random range, up to the full left-to-right range at 31. Maybe weight the draw
+  towards the extremes, so one-sided bolts don't drown among almost-centred ones;
+- open: a checkbox for leaning one way only, if a strip's one end is "up";
+- **build it before anyone saves a look with this effect.** WLED's default for custom 3 is 16, not
+  0, so an existing preset would suddenly lean. Until then, no look depends on it. The id (241)
+  doesn't change; the metadata gains the slider's name, and the frame tests a case for each
+  extreme.
 
 ## Licence
 
