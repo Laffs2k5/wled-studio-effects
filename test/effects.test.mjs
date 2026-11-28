@@ -212,3 +212,59 @@ test("sky: Flicker gives several strokes", async () => {
   assert.equal(await strokes(0), 0);
   assert.ok(await strokes(255) >= 2);
 });
+
+// On sound: strikes from the mic level, not the timer. Strikes 128 puts the threshold at ~130.
+const flashed = (px) => px.some((c) => brightness(c) > 600);
+const strikeStarts = (m, frame, levels) => {
+  // levels: [[from_ms, level], ...]; returns the times a new flash appears
+  const starts = [];
+  let was = false;
+  for (let t = 0; t <= levels.at(-1)[0] + 1000; t += 20) {
+    const lvl = [...levels].reverse().find(([from]) => t >= from)[1];
+    m._preview_audio(lvl);
+    const now = flashed(frame(t));
+    if (now && !was) starts.push(t);
+    was = now;
+  }
+  return starts;
+};
+
+test("sky: On sound never strikes in silence, even when Strikes is high", async () => {
+  const { m, frame } = await sky({ o2: 1, sx: 255 });
+  assert.deepEqual(strikeStarts(m, frame, [[0, 0], [30000, 0]]), []);
+});
+
+test("sky: On sound strikes once on a loud bang, again only after the level has dropped", async () => {
+  const { m, frame } = await sky({ o2: 1, sx: 128, c2: 0, c1: 0 });
+  // quiet, a held loud sound (one strike), quiet, another bang (a second strike)
+  const starts = strikeStarts(m, frame, [[0, 20], [1000, 200], [4000, 20], [6000, 220], [6500, 20]]);
+  assert.equal(starts.length, 2, `starts ${starts}`);
+  assert.ok(starts[0] >= 1000 && starts[0] < 1100, `first ${starts[0]}`);
+  assert.ok(starts[1] >= 6000 && starts[1] < 6100, `second ${starts[1]}`);
+});
+
+test("sky: On sound ignores sounds below the threshold; higher Strikes hears quieter ones", async () => {
+  const quiet = [[0, 0], [1000, 100], [3000, 0]];
+  const deaf = await sky({ o2: 1, sx: 64 });     // threshold ~180
+  assert.deepEqual(strikeStarts(deaf.m, deaf.frame, quiet), []);
+  const keen = await sky({ o2: 1, sx: 200 });    // threshold ~73
+  assert.equal(strikeStarts(keen.m, keen.frame, quiet).length, 1);
+});
+
+test("sky: On sound keeps the random spot and spread", async () => {
+  // six bangs in one run: the flashes centre on different LEDs and spread to different widths
+  const { m, frame } = await sky({ o2: 1, sx: 128, c2: 0, c1: 0, c3: 31 });
+  const centres = new Set(), widths = new Set();
+  for (let k = 0; k < 6; k++) {
+    const t0 = k * 3000;
+    m._preview_audio(0); frame(t0);
+    m._preview_audio(250);
+    // each LED's brightest moment over the strike: the flash's footprint
+    let px = frame(t0 + 20).map(brightness);
+    for (let t = t0 + 40; t <= t0 + 300; t += 20) px = frame(t).map((c, i) => Math.max(px[i], brightness(c)));
+    centres.add(px.indexOf(Math.max(...px)));
+    widths.add(px.filter((b) => b > brightness(BASE) + 150).length);
+  }
+  assert.ok(centres.size >= 4, `centres ${[...centres]}`);
+  assert.ok(widths.size >= 3, `widths ${[...widths]}`);
+});

@@ -16,7 +16,7 @@ the id keep working across firmware builds.
 | Id | Effect | What it does |
 |---|---|---|
 | 240 | **Studio VU** | A classic VU meter on the mic: a bar grows from the segment's start with the volume, coloured by position from Low through Mid to High (green, yellow, red by default). It rises at once, falls at an adjustable rate, and a peak dot holds before it drops. Two segments running it on the same sound stay in step. |
-| 241 | **Sky Lightning** | Lightning as it looks on a cloudy sky: a strike's light spreads outwards from a spot, flickers in a few return strokes, then leaves an afterglow that fades slowly, brightest where the flash was. Overlay mode draws no base, for a layer over another segment (blend mode Screen or Lighten). |
+| 241 | **Sky Lightning** | Lightning as it looks on a cloudy sky: a strike's light spreads outwards from a spot, flickers in a few return strokes, then leaves an afterglow that fades slowly, brightest where the flash was. Overlay mode draws no base, for a layer over another segment (blend mode Screen or Lighten); On sound makes loud sounds set off the strikes. |
 
 ## Controls
 
@@ -42,6 +42,12 @@ the id keep working across firmware builds.
   runs twice as far its one way. The draw is weighted towards the ends, so lopsided strikes look
   lopsided.
 - Overlay: draw no base colour.
+- On sound: strikes come from the mic instead of the timer. A strike goes off when the volume
+  (AudioReactive's smoothed level) rises past a threshold, and the next one waits until the level
+  has dropped back below 80 % of it and the strokes are over, so one loud bang is one strike. Strikes
+  is then the sensitivity: 0 reacts only to the loudest sounds (level 230 of 255), 255 to quiet ones
+  (30). Spot, Size, Lean and Flicker stay random as without it. Without a mic it follows WLED's
+  sound simulation.
 - Colours Flash (white if black), Base (the sky between strikes), Afterglow (a cool white if black).
 
 ## Use

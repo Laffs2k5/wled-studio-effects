@@ -6,7 +6,8 @@
 // Controls: Strikes (how often), Size (how far a flash spreads), Afterglow (how long it stays),
 // Flicker (1-4 return strokes), Lean (how lopsided strikes may be: 0 always centred, 31 anything
 // from one-sided left to one-sided right), Overlay (draw no base: for a layer over another
-// segment, with the blend mode Screen or Lighten).
+// segment, with the blend mode Screen or Lighten), On sound (strikes come from loud sounds on the
+// mic instead of the timer; Strikes is then the sensitivity: higher strikes on quieter sounds).
 // Colours: Flash (white if black), Base (the sky between strikes), Afterglow (a cool white if
 // black).
 #include <math.h>
@@ -21,6 +22,7 @@ struct Strike {
   float centre;        // LED index: where it struck
   float left, right;   // how far the flash spreads each way, LEDs
   uint8_t strokes;     // 1..4
+  bool armed;          // On sound: the level has dropped back since the last strike
 };
 
 constexpr uint32_t kSpreadMs = 150;   // the flash reaches its full size in this time
@@ -33,6 +35,16 @@ uint32_t next_interval() {
   // a mean of 20 s (Strikes 0) down to 1.5 s (255), spread from 0.3 to 1.7 times the mean
   const float mean = 20000.0f - 18500.0f * SEGMENT.speed / 255.0f;
   return uint32_t(mean * (0.3f + 1.4f * hw_random16() / 65535.0f));
+}
+
+// On sound: the level (0..255) that sets off a strike, from Strikes (0: only the loudest, 255: quiet).
+float sound_threshold() { return 230.0f - 200.0f * SEGMENT.speed / 255.0f; }
+
+// AudioReactive's smoothed volume (0..255), or the sound simulation without a mic.
+float volume_now() {
+  um_data_t* um = nullptr;
+  if (!UsermodManager::getUMData(&um, USERMOD_ID_AUDIOREACTIVE)) um = simulateSound(SEGMENT.soundSim);
+  return *(float*)um->u_data[0];
 }
 
 // A random lean in -1..1 within Lean's range, weighted towards the ends: a lopsided bolt should
@@ -73,7 +85,17 @@ void mode_sky_lightning(void) {
   }
   const float dt = fminf(200.0f, float(strip.now - SEGENV.step));
   SEGENV.step = strip.now;
-  if (int32_t(strip.now - s->next) >= 0) new_strike(s, len);
+  if (SEGMENT.check2) {
+    // On sound: strike when the level rises past the threshold; then wait until it has dropped
+    // back (to 80 %) and the strike's own strokes are over, so one loud bang is one strike
+    const float level = volume_now();
+    const float thr = sound_threshold();
+    const bool busy = s->strokes && strip.now - s->start < s->strokes * kStrokeGapMs + kSpreadMs;
+    if (level < thr * 0.8f) s->armed = true;
+    if (s->armed && !busy && level >= thr) { new_strike(s, len); s->armed = false; }
+  } else if (int32_t(strip.now - s->next) >= 0) {
+    new_strike(s, len);
+  }
 
   // the afterglow fades over 0.2..3 s
   const float tau = 200.0f + 2800.0f * SEGMENT.custom1 / 255.0f;
