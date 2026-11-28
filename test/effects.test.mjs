@@ -251,10 +251,11 @@ test("sky: On sound ignores sounds below the threshold; higher Strikes hears qui
   assert.equal(strikeStarts(keen.m, keen.frame, quiet).length, 1);
 });
 
-test("sky: On sound keeps the random spot and spread", async () => {
-  // six bangs in one run: the flashes centre on different LEDs and spread to different widths
+test("sky: On sound keeps the random spot and lean", async () => {
+  // six bangs in one run: the flashes centre on different LEDs and lean differently (Size fixes a
+  // flash's length, Lean splits it between the two sides)
   const { m, frame } = await sky({ o2: 1, sx: 128, c2: 0, c1: 0, c3: 31 });
-  const centres = new Set(), widths = new Set();
+  const centres = new Set(), leans = new Set();
   for (let k = 0; k < 6; k++) {
     const t0 = k * 3000;
     m._preview_audio(0); frame(t0);
@@ -262,9 +263,11 @@ test("sky: On sound keeps the random spot and spread", async () => {
     // each LED's brightest moment over the strike: the flash's footprint
     let px = frame(t0 + 20).map(brightness);
     for (let t = t0 + 40; t <= t0 + 300; t += 20) px = frame(t).map((c, i) => Math.max(px[i], brightness(c)));
-    centres.add(px.indexOf(Math.max(...px)));
-    widths.add(px.filter((b) => b > brightness(BASE) + 150).length);
+    const centre = px.indexOf(Math.max(...px));
+    centres.add(centre);
+    const lit = px.map((b, i) => (b > brightness(BASE) + 150 ? i : -1)).filter((i) => i >= 0);
+    leans.add(Math.round((centre - lit[0]) / Math.max(1, lit.at(-1) - lit[0]) * 4));   // 0..4: left..right
   }
   assert.ok(centres.size >= 4, `centres ${[...centres]}`);
-  assert.ok(widths.size >= 3, `widths ${[...widths]}`);
+  assert.ok(leans.size >= 3, `leans ${[...leans]}`);
 });
