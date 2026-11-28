@@ -18,6 +18,27 @@ the id keep working across firmware builds.
 | 240 | **Studio VU** | A classic VU meter on the mic: a bar grows from the segment's start with the volume, coloured by position from Low through Mid to High (green, yellow, red by default). It rises at once, falls at an adjustable rate, and a peak dot holds before it drops. Two segments running it on the same sound stay in step. |
 | 241 | **Sky Lightning** | Lightning as it looks on a cloudy sky: a strike's light spreads outwards from a spot, flickers in a few return strokes, then leaves an afterglow that fades slowly, brightest where the flash was. Overlay mode draws no base, for a layer over another segment (blend mode Screen or Lighten); On sound makes loud sounds set off the strikes. |
 
+Plus one usermod that isn't an effect:
+
+**Studio cue** (`studio_cue.cpp`): a short gauge drawn on top of whatever the strip shows, for a few
+seconds, **without a segment**. It's drawn in WLED's overlay hook, after the segments are blended,
+so the looks underneath keep their segments and current preset, and nothing watching the segment
+list (a home automation integration) sees segments come and go. Brightness and the current limiter
+apply as usual. Set it through the JSON API:
+
+```json
+POST /json/state
+{"cue": {"start": 30, "len": 9, "lit": 3, "rev": true, "on": [255, 200, 0], "off": [0, 0, 0, 24], "ms": 3000}}
+```
+
+- `start`: first LED (absolute index); `len`: 1-64 LEDs (default 9); `lit`: how many are lit from
+  the gauge's first LED; `rev`: the gauge's first LED is the last of the range.
+- `on`: colour of the lit LEDs (default white); `off`: colour of the others, or leave it out to let
+  the strip show through. As `[r,g,b]`, `[r,g,b,w]`, `"RRGGBB"` or `"WWRRGGBB"`.
+- `ms`: how long, up to 60000 (default 3000). `{"cue": {"ms": 0}}` clears it; a new cue replaces
+  the running one. `/json/info` lists "Studio cue": showing or idle.
+- Not in the effect preview or the virtual twin (WebAssembly has no strip output to draw over).
+
 ## Controls
 
 **Studio VU** (`1v`: 1D, sound-reactive)
