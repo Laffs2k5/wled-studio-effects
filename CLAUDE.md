@@ -21,10 +21,10 @@ Own WLED effects, as one usermod library, for wled-studio. Public, EUPL-1.2.
 - **State** goes in `SEGENV.data` (`allocateData`), initialised when `SEGENV.call == 0`; time from
   `strip.now`, so the effect runs at any frame rate.
 
-- **No users yet** (owner, 2026-11-24): nobody runs these effects, so change controls, defaults and
-  behaviour freely; don't design around presets that might exist. Once we use the effects
-  ourselves (flashed, in looks), compatibility with saved presets starts to matter: write that
-  down here when it happens.
+- **In use since 2026-11-28:** the owner's controller runs both effects, in saved looks. Saved
+  presets store the slider and checkbox values, so **don't change what an existing control means
+  or its default**; add new behaviour behind a control that is off by default (Sky Lightning's
+  On sound, `o2`, was added that way), and keep new checkboxes after the existing ones.
 
 ## Git
 
